@@ -8,12 +8,12 @@ namespace Lesson_1.Task_1
     {
         #region Fields
 
-        [SerializeField] Slider _healthBar;
-        [SerializeField] Button _startHealingButton;
-        [SerializeField] Button _resetHealthButton;
-        [SerializeField] Text _healthText;
+        [SerializeField] private Slider _healthBar;
+        [SerializeField] private Button _startHealingButton;
+        [SerializeField] private Button _resetHealthButton;
+        [SerializeField] private Text _healthText;
         [Space]
-        [SerializeField] bool _canRenewHealing;
+        [SerializeField] private bool _canRenewHealing;
 
         private int _health;
 
