@@ -75,9 +75,6 @@ public class Server : MonoBehaviour
                     }
                     else
                     {
-                        //SendMessageToAll($"Player {connectionId}: {message}");
-                        //Debug.Log($"Player {connectionId}: {message}");
-
                         SendMessageToAll($"{_userNamesByConnectionID[connectionId]}: {message}");
                         Debug.Log($"{_userNamesByConnectionID[connectionId]}: {message}");
                     }
