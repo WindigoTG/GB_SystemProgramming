@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public abstract class FireAction : MonoBehaviour
+public abstract class FireAction : NetworkBehaviour
 {
     [SerializeField]
     private GameObject bulletPrefab;

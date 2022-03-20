@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class PlayerCharacter : Character
+public class PlayerCharacter : Character, IDamageable
 {
     [Range(0, 100)] [SerializeField] private int health = 100;
 
@@ -12,6 +12,8 @@ public class PlayerCharacter : Character
     private MouseLook mouseLook;
 
     private Vector3 currentVelocity;
+
+    [SyncVar] int serverHealth;
 
     protected override FireAction fireAction { get; set; }
 
@@ -26,6 +28,8 @@ public class PlayerCharacter : Character
         characterController ??= gameObject.AddComponent<CharacterController>();
         mouseLook = GetComponentInChildren<MouseLook>();
         mouseLook ??= gameObject.AddComponent<MouseLook>();
+
+        CmdSetHealth(health);
     }
 
     public override void Movement()
@@ -54,10 +58,12 @@ public class PlayerCharacter : Character
             mouseLook.Rotation();
 
             CmdUpdatePosition(transform.position);
+            CmdUpdateRotation(transform.rotation);
         }
         else
         {
             transform.position = Vector3.SmoothDamp(transform.position, serverPosition, ref currentVelocity, movingSpeed * Time.deltaTime);
+            transform.rotation = serverRotation;
         }
     }
 
@@ -65,12 +71,21 @@ public class PlayerCharacter : Character
     {
         Initiate();
     }
+
+    private void LateUpdate()
+    {
+        health = serverHealth;
+    }
+
     private void OnGUI()
     {
         if (Camera.main == null)
         {
             return;
         }
+
+        if (!hasAuthority)
+            return;
 
         var info = $"Health: {health}\nClip: {fireAction.bulletCount}";
         var size = 12;
@@ -81,5 +96,22 @@ public class PlayerCharacter : Character
         var posYBul = Camera.main.pixelHeight - bulletCountSize;
         GUI.Label(new Rect(posX, posY, size, size), "+");
         GUI.Label(new Rect(posXBul, posYBul, bulletCountSize * 2, bulletCountSize * 2), info);
+    }
+
+    public void TakeDamage(int amount)
+    {
+        CmdTakeDamage(amount);
+    }
+
+    [Command]
+    private void CmdTakeDamage(int amount)
+    {
+        serverHealth -= amount;
+    }
+
+    [Command]
+    private void CmdSetHealth(int health)
+    {
+        serverHealth = health;
     }
 }

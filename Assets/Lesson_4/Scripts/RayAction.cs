@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class RayShooter : FireAction
 {
@@ -36,14 +37,43 @@ public class RayShooter : FireAction
 
     protected override void Shooting()
     {
+        if (!hasAuthority)
+            return;
+
         base.Shooting();
         if (bullets.Count > 0)
         {
             StartCoroutine(Shoot());
+
+            //if (reloading)
+            //    return;
+
+            //var point = new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2, 0);
+            //var ray = camera.ScreenPointToRay(point);
+
+            //CmdShoot(ray);
         }
     }
 
-    private IEnumerator Shoot()
+    //[Command]
+    //private void CmdShoot(Ray ray)
+    //{
+    //    if (!Physics.Raycast(ray, out var hit))
+    //    {
+    //        return;
+    //    }
+
+    //    RpcShoot(hit);
+    //}
+
+    //[ClientRpc]
+    //private void RpcShoot(RaycastHit hit)
+    //{
+    //    StartCoroutine(Shoot(hit));
+    //}
+
+
+    private IEnumerator Shoot()//(RaycastHit hit)
     {
         if (reloading)
         {
@@ -55,6 +85,10 @@ public class RayShooter : FireAction
         {
             yield break;
         }
+
+        var damageable = hit.transform.GetComponentInParent<IDamageable>();
+        if (damageable != null)
+            damageable.TakeDamage(15);
 
         var shoot = bullets.Dequeue();
         bulletCount = bullets.Count.ToString();
