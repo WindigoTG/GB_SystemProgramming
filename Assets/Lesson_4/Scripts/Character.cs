@@ -31,6 +31,11 @@ public abstract class Character : NetworkBehaviour
     {
         serverPosition = position;
     }
+    [Command]
+    protected void CmdUpdateRotation(Quaternion rotation)
+    {
+        serverRotation = rotation;
+    }
 
     public abstract void Movement();
 

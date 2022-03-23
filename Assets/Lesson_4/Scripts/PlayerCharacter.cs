@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class PlayerCharacter : Character
+public class PlayerCharacter : Character, IDamageable
 {
-    [Range(0, 100)] [SerializeField] private int health = 100;
+    [Range(0, 100)] [SerializeField] [SyncVar] private int health = 100;
 
     [Range(0.5f, 10.0f)] [SerializeField] private float movingSpeed = 8.0f;
     [SerializeField] private float acceleration = 3.0f;
@@ -20,7 +20,7 @@ public class PlayerCharacter : Character
     protected override void Initiate()
     {
         base.Initiate();
-        fireAction = gameObject.AddComponent<RayShooter>();
+        fireAction = gameObject.GetComponent<RayAction>();
         fireAction.Reloading();
         characterController = GetComponentInChildren<CharacterController>();
         characterController ??= gameObject.AddComponent<CharacterController>();
@@ -54,10 +54,12 @@ public class PlayerCharacter : Character
             mouseLook.Rotation();
 
             CmdUpdatePosition(transform.position);
+            CmdUpdateRotation(transform.rotation);
         }
         else
         {
             transform.position = Vector3.SmoothDamp(transform.position, serverPosition, ref currentVelocity, movingSpeed * Time.deltaTime);
+            transform.rotation = serverRotation;
         }
     }
 
@@ -65,12 +67,25 @@ public class PlayerCharacter : Character
     {
         Initiate();
     }
+
+    private void LateUpdate()
+    {
+        if (!hasAuthority)
+            return;
+
+        if (health <= 0)
+            NetworkManager.singleton.StopClient();
+    }
+
     private void OnGUI()
     {
         if (Camera.main == null)
         {
             return;
         }
+
+        if (!hasAuthority)
+            return;
 
         var info = $"Health: {health}\nClip: {fireAction.bulletCount}";
         var size = 12;
@@ -81,5 +96,10 @@ public class PlayerCharacter : Character
         var posYBul = Camera.main.pixelHeight - bulletCountSize;
         GUI.Label(new Rect(posX, posY, size, size), "+");
         GUI.Label(new Rect(posXBul, posYBul, bulletCountSize * 2, bulletCountSize * 2), info);
+    }
+
+    public void TakeDamage(int amount)
+    {
+        health -= amount;
     }
 }
