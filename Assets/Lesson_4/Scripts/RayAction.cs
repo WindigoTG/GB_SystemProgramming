@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class RayShooter : FireAction
+public class RayAction : FireAction
 {
     private Camera camera;
 
@@ -43,59 +43,59 @@ public class RayShooter : FireAction
         base.Shooting();
         if (bullets.Count > 0)
         {
-            StartCoroutine(Shoot());
+            //StartCoroutine(Shoot());
 
-            //if (reloading)
-            //    return;
+            if (reloading)
+                return;
 
-            //var point = new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2, 0);
-            //var ray = camera.ScreenPointToRay(point);
+            var point = new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2, 0);
+            var ray = camera.ScreenPointToRay(point);
 
-            //CmdShoot(ray);
+            Debug.Log(ray.origin + "  |  " + ray.direction);
+            Debug.DrawRay(ray.origin, ray.direction);
+
+            CmdShoot(ray.origin, ray.direction);
         }
     }
 
-    //[Command]
-    //private void CmdShoot(Ray ray)
-    //{
-    //    if (!Physics.Raycast(ray, out var hit))
-    //    {
-    //        return;
-    //    }
+    [Command]
+    private void CmdShoot(Vector3 origin, Vector3 direction)
+    {
+        if (!Physics.Raycast(origin, direction, out var hit))
+        {
+            return;
+        }
 
-    //    RpcShoot(hit);
-    //}
+        var damageable = hit.transform.GetComponentInParent<IDamageable>();
+        Debug.Log(damageable);
+        if (damageable != null)
+        {
+            damageable.TakeDamage(15);
+        }
 
-    //[ClientRpc]
-    //private void RpcShoot(RaycastHit hit)
-    //{
-    //    StartCoroutine(Shoot(hit));
-    //}
+        RpcShoot(hit.point);
+    }
+
+    [ClientRpc]
+    private void RpcShoot(Vector3 hit)
+    {
+        StartCoroutine(Shoot(hit));
+    }
 
 
-    private IEnumerator Shoot()//(RaycastHit hit)
+    private IEnumerator Shoot(Vector3 hit)
     {
         if (reloading)
         {
             yield break;
         }
-        var point = new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2, 0);
-        var ray = camera.ScreenPointToRay(point);
-        if (!Physics.Raycast(ray, out var hit))
-        {
-            yield break;
-        }
-
-        var damageable = hit.transform.GetComponentInParent<IDamageable>();
-        if (damageable != null)
-            damageable.TakeDamage(15);
 
         var shoot = bullets.Dequeue();
         bulletCount = bullets.Count.ToString();
         ammunition.Enqueue(shoot);
         shoot.SetActive(true);
-        shoot.transform.position = hit.point;
-        shoot.transform.parent = hit.transform;
+        shoot.transform.position = hit;//.point;
+        //shoot.transform.parent = hit;//.transform;
 
         yield return new WaitForSeconds(2.0f);
         shoot.SetActive(false);

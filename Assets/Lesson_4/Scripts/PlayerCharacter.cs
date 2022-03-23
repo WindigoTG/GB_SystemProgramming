@@ -3,7 +3,7 @@ using UnityEngine.Networking;
 
 public class PlayerCharacter : Character, IDamageable
 {
-    [Range(0, 100)] [SerializeField] private int health = 100;
+    [Range(0, 100)] [SerializeField] [SyncVar] private int health = 100;
 
     [Range(0.5f, 10.0f)] [SerializeField] private float movingSpeed = 8.0f;
     [SerializeField] private float acceleration = 3.0f;
@@ -13,8 +13,6 @@ public class PlayerCharacter : Character, IDamageable
 
     private Vector3 currentVelocity;
 
-    [SyncVar] int serverHealth;
-
     protected override FireAction fireAction { get; set; }
 
     public NetworkConnection connection { get; set; }
@@ -22,14 +20,12 @@ public class PlayerCharacter : Character, IDamageable
     protected override void Initiate()
     {
         base.Initiate();
-        fireAction = gameObject.AddComponent<RayShooter>();
+        fireAction = gameObject.GetComponent<RayAction>();
         fireAction.Reloading();
         characterController = GetComponentInChildren<CharacterController>();
         characterController ??= gameObject.AddComponent<CharacterController>();
         mouseLook = GetComponentInChildren<MouseLook>();
         mouseLook ??= gameObject.AddComponent<MouseLook>();
-
-        CmdSetHealth(health);
     }
 
     public override void Movement()
@@ -74,7 +70,11 @@ public class PlayerCharacter : Character, IDamageable
 
     private void LateUpdate()
     {
-        health = serverHealth;
+        if (!hasAuthority)
+            return;
+
+        if (health <= 0)
+            NetworkManager.singleton.StopClient();
     }
 
     private void OnGUI()
@@ -100,18 +100,6 @@ public class PlayerCharacter : Character, IDamageable
 
     public void TakeDamage(int amount)
     {
-        CmdTakeDamage(amount);
-    }
-
-    [Command]
-    private void CmdTakeDamage(int amount)
-    {
-        serverHealth -= amount;
-    }
-
-    [Command]
-    private void CmdSetHealth(int health)
-    {
-        serverHealth = health;
+        health -= amount;
     }
 }
